@@ -53,8 +53,25 @@ async function callLovableAI(messages: Array<{ role: string; content: string }>)
   return content;
 }
 
+const LENGTHS = ["short", "standard", "detailed"] as const;
+type Length = (typeof LENGTHS)[number];
+
+const LENGTH_INSTRUCTIONS: Record<Length, string> = {
+  short:
+    "Keep it very concise: a 1-2 sentence overview, then 3-4 bullet points. Aim for ~120 words total.",
+  standard:
+    "A 2-3 sentence overview, then 5-8 bullet points of key takeaways. Aim for ~300 words.",
+  detailed:
+    "Write a thorough breakdown: a short overview, then section headings (## ) grouping related ideas, with bullet points under each. Include nuances, examples, and any numbered lists the speaker presents. Aim for ~700 words.",
+};
+
 export const summarizeVideo = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ url: z.string().min(1).max(500) }))
+  .inputValidator(
+    z.object({
+      url: z.string().min(1).max(500),
+      length: z.enum(LENGTHS).default("standard"),
+    }),
+  )
   .handler(async ({ data }) => {
     const videoId = extractVideoId(data.url);
     if (!videoId) {
