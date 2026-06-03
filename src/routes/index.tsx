@@ -219,7 +219,7 @@ function Index() {
                 </div>
               )}
 
-              <article className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
+              <article className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5 prose-li:my-1 marker:text-primary">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {displayContent ?? ""}
                 </ReactMarkdown>
