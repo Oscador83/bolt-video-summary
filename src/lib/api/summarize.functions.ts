@@ -53,8 +53,25 @@ async function callLovableAI(messages: Array<{ role: string; content: string }>)
   return content;
 }
 
+const LENGTHS = ["short", "standard", "detailed"] as const;
+type Length = (typeof LENGTHS)[number];
+
+const LENGTH_INSTRUCTIONS: Record<Length, string> = {
+  short:
+    "Keep it very concise: a 1-2 sentence overview, then 3-4 bullet points. Aim for ~120 words total.",
+  standard:
+    "A 2-3 sentence overview, then 5-8 bullet points of key takeaways. Aim for ~300 words.",
+  detailed:
+    "Write a thorough breakdown: a short overview, then section headings (## ) grouping related ideas, with bullet points under each. Include nuances, examples, and any numbered lists the speaker presents. Aim for ~700 words.",
+};
+
 export const summarizeVideo = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ url: z.string().min(1).max(500) }))
+  .inputValidator(
+    z.object({
+      url: z.string().min(1).max(500),
+      length: z.enum(LENGTHS).default("standard"),
+    }),
+  )
   .handler(async ({ data }) => {
     const videoId = extractVideoId(data.url);
     if (!videoId) {
@@ -94,8 +111,9 @@ export const summarizeVideo = createServerFn({ method: "POST" })
 RULES:
 - Detect the language of the transcript and write your ENTIRE summary in THAT SAME language.
 - Do not translate to English unless the source is English.
-- Structure: a 2-3 sentence overview, then 5-8 bullet points of key takeaways.
-- Use clear Markdown. No preamble like "Here is the summary".`;
+- Length & structure: ${LENGTH_INSTRUCTIONS[data.length]}
+- Use clear Markdown formatting. When the video presents a list (top N, steps, tips, reasons), render it as a Markdown list — use a numbered list (1. 2. 3.) when order matters or when the speaker explicitly numbers items, otherwise use bullets (- ). Use "## " section headings to group related points when helpful.
+- No preamble like "Here is the summary".`;
 
     const user = `Summarize this YouTube video transcript${
       truncated ? " (note: transcript was truncated to fit)" : ""
