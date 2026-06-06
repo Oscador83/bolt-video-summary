@@ -143,9 +143,41 @@ ${transcriptForAI}`;
       detectedLang,
       title: meta?.title ?? null,
       author: meta?.author_name ?? null,
+      transcript: transcriptForAI,
       transcriptChars: transcript.length,
       truncated,
     };
+  });
+
+export const chatAboutVideo = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      transcript: z.string().min(1).max(80_000),
+      title: z.string().max(300).nullable().optional(),
+      messages: z
+        .array(
+          z.object({
+            role: z.enum(["user", "assistant"]),
+            content: z.string().min(1).max(4_000),
+          }),
+        )
+        .min(1)
+        .max(30),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const system = `You are an assistant answering questions about a YouTube video.
+You have ONLY the transcript below as your source. If the answer isn't in the transcript, say so briefly.
+Answer in the same language as the user's question. Keep answers concise and use Markdown when helpful.
+${data.title ? `Video title: ${data.title}\n` : ""}
+TRANSCRIPT:
+${data.transcript}`;
+
+    const reply = await callLovableAI([
+      { role: "system", content: system },
+      ...data.messages,
+    ]);
+    return { reply };
   });
 
 export const translateSummary = createServerFn({ method: "POST" })
