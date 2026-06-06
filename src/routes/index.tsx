@@ -6,7 +6,10 @@ import { flushSync } from "react-dom";
 import { createParser } from "eventsource-parser";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { summarizeVideo, translateSummary } from "@/lib/api/summarize.functions";
+import { summarizeVideo, translateSummary, chatAboutVideo } from "@/lib/api/summarize.functions";
+
+const TEXT_MODEL_LABEL = "Gemini 3 Flash";
+const IMAGE_MODEL_LABEL = "GPT Image 2";
 
 export const Route = createFileRoute("/")({
   head: () => ({
