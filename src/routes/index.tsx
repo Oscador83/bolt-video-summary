@@ -200,11 +200,42 @@ function Index() {
   }, [runSummarize, summaryMut.isPending]);
 
   const summary = summaryMut.data?.summary;
+  const transcript = summaryMut.data?.transcript;
   const videoId = summaryMut.data?.videoId;
   const videoTitle = summaryMut.data?.title;
   const videoAuthor = summaryMut.data?.author;
   const detectedLang = summaryMut.data?.detectedLang;
   const displayContent = translateMut.data?.translated ?? summary;
+
+  const openImageInNewWindow = async () => {
+    if (!visualSrc) return;
+    try {
+      const blob = await (await fetch(visualSrc)).blob();
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      if (!w) {
+        // popup blocked — fall back to navigation
+        window.location.href = url;
+      }
+      // revoke later so the window has time to load
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const sendChat = () => {
+    const text = chatInput.trim();
+    if (!text || !transcript || chatMut.isPending) return;
+    const next: ChatMsg[] = [...chatMessages, { role: "user", content: text }];
+    setChatMessages(next);
+    setChatInput("");
+    chatMut.mutate({
+      transcript,
+      title: videoTitle ?? null,
+      messages: next,
+    });
+  };
 
   const copyAll = async () => {
     if (!displayContent) return;
