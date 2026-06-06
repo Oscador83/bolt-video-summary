@@ -80,8 +80,15 @@ function Index() {
   const [visualError, setVisualError] = useState<string | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
+  // Chat panel state
+  type ChatMsg = { role: "user" | "assistant"; content: string };
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
+
   const summarize = useServerFn(summarizeVideo);
   const translate = useServerFn(translateSummary);
+  const chat = useServerFn(chatAboutVideo);
 
   const summaryMut = useMutation({
     mutationFn: (vars: { url: string; length: Length }) =>
