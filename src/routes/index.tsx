@@ -100,6 +100,17 @@ function Index() {
       translate({ data: vars }),
   });
 
+  const chatMut = useMutation({
+    mutationFn: (vars: {
+      transcript: string;
+      title: string | null;
+      messages: ChatMsg[];
+    }) => chat({ data: vars }),
+    onSuccess: (res) => {
+      setChatMessages((m) => [...m, { role: "assistant", content: res.reply }]);
+    },
+  });
+
   // Load persisted state
   useEffect(() => {
     try {
