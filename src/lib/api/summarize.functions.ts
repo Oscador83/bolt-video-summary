@@ -93,10 +93,18 @@ export const summarizeVideo = createServerFn({ method: "POST" })
       segments = await YoutubeTranscript.fetchTranscript(videoId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      const blocked =
+        /disabled|blocked|429|403|captcha|too many requests/i.test(msg);
+      if (blocked) {
+        throw new Error(
+          "YouTube is temporarily blocking transcript requests from our server. This usually clears up in a few minutes — try again shortly, or try a different video. (You can also try the in-browser fallback if available.)",
+        );
+      }
       throw new Error(
-        `Couldn't fetch the transcript. YouTube often blocks server requests (this is a known limitation). Details: ${msg}`,
+        `Couldn't fetch the transcript for this video. Details: ${msg}`,
       );
     }
+
 
     if (!segments.length) {
       throw new Error("No transcript was returned for this video.");
