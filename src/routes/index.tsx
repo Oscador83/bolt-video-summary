@@ -920,8 +920,7 @@ function InputCard({
     const u = url.trim();
     if (!u) return;
     onSubmit({ url: u, length, customInstructions });
-    // Clear input after submit so the field is ready for the next one
-    setUrl("");
+    // Keep the URL in the box so the user can see what was summarized.
   };
 
   // Auto-summarize on paste of a YouTube URL
@@ -933,7 +932,6 @@ function InputCard({
       e.preventDefault();
       setUrl(pasted);
       setTimeout(() => onSubmit({ url: pasted, length, customInstructions }), 10);
-      setTimeout(() => setUrl(""), 100);
     }
   };
 
@@ -956,12 +954,12 @@ function InputCard({
         setUrl(clean);
         if (session.autoSummarize) {
           setTimeout(() => onSubmit({ url: clean, length, customInstructions }), 10);
-          setTimeout(() => setUrl(""), 100);
         }
         return;
       }
     }
   };
+
 
   return (
     <form
