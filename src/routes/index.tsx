@@ -821,11 +821,11 @@ function Index() {
           </div>
         )}
 
-        {/* ============ Bottom input (multi-mode) ============ */}
-        {session.multiMode && session.cards.length > 0 && (
+        {/* ============ Bottom input (always visible once a card exists) ============ */}
+        {session.cards.length > 0 && (
           <div ref={bottomRef} className="pt-2">
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Add another video
+              {session.multiMode ? "Add another video" : "Summarize another video"}
             </p>
             <InputCard
               session={session}
@@ -854,6 +854,7 @@ function Index() {
             />
           </div>
         )}
+
 
         <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-muted-foreground">
           <div>
@@ -908,20 +909,25 @@ function InputCard({
   showResetAll: boolean;
   compact?: boolean;
 }) {
-  const { url, length, customInstructions } = session.input;
+  const { length, customInstructions } = session.input;
+  const [localUrl, setLocalUrl] = useState("");
+  const url = compact ? localUrl : session.input.url;
   const [dragOver, setDragOver] = useState(false);
-  const setUrl = (u: string) => updateSession((s) => ({ ...s, input: { ...s.input, url: u } }));
+  const setUrl = (u: string) => {
+    if (compact) setLocalUrl(u);
+    else updateSession((s) => ({ ...s, input: { ...s.input, url: u } }));
+  };
   const setLength = (l: Length) =>
     updateSession((s) => ({ ...s, input: { ...s.input, length: l } }));
   const setCustom = (c: string) =>
     updateSession((s) => ({ ...s, input: { ...s.input, customInstructions: c } }));
 
+
   const trySubmit = () => {
     const u = url.trim();
     if (!u) return;
     onSubmit({ url: u, length, customInstructions });
-    // Clear input after submit so the field is ready for the next one
-    setUrl("");
+    // Keep the URL in the box so the user can see what was summarized.
   };
 
   // Auto-summarize on paste of a YouTube URL
@@ -933,7 +939,6 @@ function InputCard({
       e.preventDefault();
       setUrl(pasted);
       setTimeout(() => onSubmit({ url: pasted, length, customInstructions }), 10);
-      setTimeout(() => setUrl(""), 100);
     }
   };
 
@@ -956,12 +961,12 @@ function InputCard({
         setUrl(clean);
         if (session.autoSummarize) {
           setTimeout(() => onSubmit({ url: clean, length, customInstructions }), 10);
-          setTimeout(() => setUrl(""), 100);
         }
         return;
       }
     }
   };
+
 
   return (
     <form
@@ -1005,8 +1010,11 @@ function InputCard({
               type="button"
               onClick={onStop}
               data-submit
-              className="absolute right-2 cursor-pointer rounded-lg bg-destructive px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-destructive/20 transition-all hover:brightness-110"
+              className="absolute right-2 flex cursor-pointer items-center gap-1.5 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-destructive/20 transition-all hover:brightness-110"
             >
+              <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
               Stop
             </button>
           ) : (
@@ -1020,6 +1028,7 @@ function InputCard({
               Summarize
             </button>
           )}
+
         </div>
 
         {!compact && (
@@ -1043,26 +1052,55 @@ function InputCard({
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={session.autoSummarize}
-                  onChange={(e) =>
-                    updateSession((s) => ({ ...s, autoSummarize: e.target.checked }))
-                  }
-                  className="h-3.5 w-3.5"
-                />
-                Auto-summarize on paste/drop
-              </label>
-              <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={session.multiMode}
-                  onChange={onToggleMulti}
-                  className="h-3.5 w-3.5"
-                />
-                Multi-summary
-              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  updateSession((s) => ({ ...s, autoSummarize: !s.autoSummarize }))
+                }
+                title={
+                  session.autoSummarize
+                    ? "Auto-summarize on paste/drop: ON"
+                    : "Auto-summarize on paste/drop: OFF"
+                }
+                aria-pressed={session.autoSummarize}
+                className={`flex cursor-pointer items-center justify-center rounded-lg border p-1.5 transition ${
+                  session.autoSummarize
+                    ? "border-transparent text-white shadow-sm"
+                    : "border-border bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+                style={
+                  session.autoSummarize
+                    ? { backgroundColor: "var(--brand-gold)" }
+                    : undefined
+                }
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill={session.autoSummarize ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={onToggleMulti}
+                title={
+                  session.multiMode
+                    ? "Multi-summary mode: ON"
+                    : "Multi-summary mode: OFF"
+                }
+                aria-pressed={session.multiMode}
+                className={`flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition ${
+                  session.multiMode
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                  <polyline points="2 17 12 22 22 17" />
+                  <polyline points="2 12 12 17 22 12" />
+                </svg>
+                Multi
+              </button>
+
 
               <div className="relative" data-history-menu>
                 <button
@@ -1378,15 +1416,16 @@ function SummaryCardView({
                 className="h-10 w-16 flex-shrink-0 rounded object-cover"
               />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-foreground">
+                <div className="truncate text-sm font-semibold text-foreground" title={card.title ?? ""}>
                   {card.title ?? "YouTube video"}
                 </div>
+
                 {card.author && (
                   <div className="truncate text-xs text-muted-foreground">{card.author}</div>
                 )}
               </div>
-              <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                {card.videoOpen ? "Hide" : "Show"} video
+              <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
+                <span className="hidden sm:inline">{card.videoOpen ? "Hide" : "Show"} video</span>
                 <svg
                   width="14"
                   height="14"
@@ -1401,12 +1440,17 @@ function SummaryCardView({
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </span>
+
             </button>
             {canRemove && (
               <button
                 type="button"
-                onClick={removeCard}
-                title="Remove this card"
+                onClick={() => {
+                  const hasWork = card.chat.length > 0 || !!card.visualSrc;
+                  if (hasWork && !confirm("Remove this summary (chat / image will be lost)?")) return;
+                  removeCard();
+                }}
+                title="Remove this summary"
                 className="cursor-pointer rounded-md p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1415,6 +1459,7 @@ function SummaryCardView({
                 </svg>
               </button>
             )}
+
           </div>
           {card.videoOpen && (
             <div className="border-t border-border bg-muted">
@@ -1775,24 +1820,9 @@ function ChatPanel({
         </span>
       </div>
       {chat.length > 0 && (
-        <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
-          {chat.map((m, i) => (
-            <div
-              key={i}
-              className={`rounded-lg px-3 py-2 text-sm ${
-                m.role === "user" ? "bg-primary/10 text-foreground" : "bg-card text-foreground"
-              }`}
-            >
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {m.role === "user" ? "You" : "AI"}
-              </div>
-              <div className="prose-sm text-[0.9rem] leading-relaxed [&_p]:my-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ChatMessages chat={chat} />
       )}
+
       <div className="flex gap-2">
         <input
           type="text"
@@ -1825,6 +1855,109 @@ function ChatPanel({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ============ ChatMessages (collapsible history) ============
+function ChatMessages({ chat }: { chat: ChatMsg[] }) {
+  // Latest "exchange" = trailing assistant + the user msg right before it,
+  // OR just the trailing user msg if still waiting for a reply.
+  const latestStart = useMemo(() => {
+    if (chat.length === 0) return 0;
+    const last = chat[chat.length - 1];
+    if (last.role === "assistant" && chat.length >= 2 && chat[chat.length - 2].role === "user") {
+      return chat.length - 2;
+    }
+    return chat.length - 1;
+  }, [chat]);
+
+  const oldCount = latestStart;
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [allOpen, setAllOpen] = useState(false);
+
+  const toggle = (i: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
+      {oldCount > 0 && (
+        <div className="flex items-center justify-between pb-1 text-[11px] text-muted-foreground">
+          <span>
+            {oldCount} earlier message{oldCount === 1 ? "" : "s"}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (allOpen) {
+                setExpanded(new Set());
+                setAllOpen(false);
+              } else {
+                setExpanded(new Set(Array.from({ length: oldCount }, (_, i) => i)));
+                setAllOpen(true);
+              }
+            }}
+            className="cursor-pointer underline-offset-2 hover:text-foreground hover:underline"
+          >
+            {allOpen ? "Collapse all" : "Expand all"}
+          </button>
+        </div>
+      )}
+      {chat.map((m, i) => {
+        const isOld = i < latestStart;
+        const isOpen = !isOld || expanded.has(i);
+        if (isOld && !isOpen) {
+          const preview = m.content.replace(/\s+/g, " ").trim().slice(0, 90);
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => toggle(i)}
+              className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-left text-xs text-muted-foreground transition hover:bg-card hover:text-foreground"
+              title="Click to expand"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">
+                {m.role === "user" ? "You" : "AI"}
+              </span>
+              <span className="truncate">{preview}</span>
+            </button>
+          );
+        }
+        return (
+          <div
+            key={i}
+            className={`rounded-lg px-3 py-2 text-sm ${
+              m.role === "user" ? "bg-primary/10 text-foreground" : "bg-card text-foreground"
+            }`}
+          >
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {m.role === "user" ? "You" : "AI"}
+              </span>
+              {isOld && (
+                <button
+                  type="button"
+                  onClick={() => toggle(i)}
+                  className="cursor-pointer text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  Collapse
+                </button>
+              )}
+            </div>
+            <div className="prose-sm text-[0.9rem] leading-relaxed [&_p]:my-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
