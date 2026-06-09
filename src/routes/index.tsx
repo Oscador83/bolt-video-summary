@@ -1820,24 +1820,9 @@ function ChatPanel({
         </span>
       </div>
       {chat.length > 0 && (
-        <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
-          {chat.map((m, i) => (
-            <div
-              key={i}
-              className={`rounded-lg px-3 py-2 text-sm ${
-                m.role === "user" ? "bg-primary/10 text-foreground" : "bg-card text-foreground"
-              }`}
-            >
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {m.role === "user" ? "You" : "AI"}
-              </div>
-              <div className="prose-sm text-[0.9rem] leading-relaxed [&_p]:my-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ChatMessages chat={chat} />
       )}
+
       <div className="flex gap-2">
         <input
           type="text"
