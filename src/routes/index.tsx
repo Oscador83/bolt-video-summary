@@ -821,11 +821,11 @@ function Index() {
           </div>
         )}
 
-        {/* ============ Bottom input (multi-mode) ============ */}
-        {session.multiMode && session.cards.length > 0 && (
+        {/* ============ Bottom input (always visible once a card exists) ============ */}
+        {session.cards.length > 0 && (
           <div ref={bottomRef} className="pt-2">
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Add another video
+              {session.multiMode ? "Add another video" : "Summarize another video"}
             </p>
             <InputCard
               session={session}
@@ -854,6 +854,7 @@ function Index() {
             />
           </div>
         )}
+
 
         <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-muted-foreground">
           <div>
