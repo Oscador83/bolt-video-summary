@@ -23,28 +23,37 @@ function extractVideoId(input: string): string | null {
   return null;
 }
 
-async function callLovableAI(messages: Array<{ role: string; content: string }>) {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("AI is not configured (LOVABLE_API_KEY missing).");
+async function callAI(messages: Array<{ role: string; content: string }>) {
+  const key = process.env.OPENROUTER_API_KEY;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  // Use OpenRouter with free models (no API key needed for free tier, but recommended)
+  // If no key, we'll use a limited free tier that may have rate limits
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (key) {
+    headers["Authorization"] = `Bearer ${key}`;
+  }
+
+  // Add optional headers for OpenRouter rankings
+  headers["HTTP-Referer"] = process.env.SITE_URL || "https://osvidsum.app";
+  headers["X-Title"] = "OSVidSum";
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({
       model: TEXT_MODEL_ID,
       messages,
     }),
   });
 
-
   if (!res.ok) {
     if (res.status === 429) throw new Error("AI rate limit reached. Try again in a minute.");
-    if (res.status === 402) throw new Error("AI credits exhausted on this workspace.");
+    if (res.status === 402) throw new Error("AI credits exhausted. Add credits to your OpenRouter account.");
     const t = await res.text();
-    throw new Error(`AI gateway error (${res.status}): ${t.slice(0, 200)}`);
+    throw new Error(`AI error (${res.status}): ${t.slice(0, 200)}`);
   }
 
   const data = (await res.json()) as {
@@ -149,7 +158,7 @@ export const summarizeVideo = createServerFn({ method: "POST" })
 
 ${transcriptForAI}`;
 
-    const summary = await callLovableAI([
+    const summary = await callAI([
       { role: "system", content: system },
       { role: "user", content: user },
     ]);
@@ -190,7 +199,7 @@ ${data.title ? `Video title: ${data.title}\n` : ""}
 TRANSCRIPT:
 ${data.transcript}`;
 
-    const reply = await callLovableAI([
+    const reply = await callAI([
       { role: "system", content: system },
       ...data.messages,
     ]);
@@ -205,7 +214,7 @@ export const translateSummary = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const translated = await callLovableAI([
+    const translated = await callAI([
       {
         role: "system",
         content: `You are a professional translator. Translate the user's Markdown content into ${data.targetLanguage}. Preserve all Markdown formatting (headings, bullets, bold). Output ONLY the translation, no commentary.`,
@@ -238,7 +247,7 @@ export const summarizeWithTranscript = createServerFn({ method: "POST" })
       truncated ? " (note: transcript was truncated)" : ""
     }:\n\n${transcriptForAI}`;
 
-    const summary = await callLovableAI([
+    const summary = await callAI([
       { role: "system", content: system },
       { role: "user", content: user },
     ]);
@@ -300,7 +309,7 @@ No preamble like "Here is the synthesis".`;
 
     const user = `Synthesize these ${data.items.length} videos:\n\n${capped}`;
 
-    const summary = await callLovableAI([
+    const summary = await callAI([
       { role: "system", content: system },
       { role: "user", content: user },
     ]);
